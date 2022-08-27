@@ -1,0 +1,17 @@
+{
+    "name": "Assembly2",
+    "rootNamespace": "",
+    "references": [
+        "GUID:e1733a97c9245e348b9af343cbd3ba41",
+        "GUID:1475cecfebec4f746a4f600f8f392fe6"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

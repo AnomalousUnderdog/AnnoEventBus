@@ -1,113 +1,178 @@
-﻿namespace pEventBus
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+
+namespace pEventBus
 {
+	/// <summary>
+	/// Main entry point for objects to register and unregister from events.
+	/// </summary>
+	public static class EventBus
+	{
+		/// <summary>
+		/// Allows retrieving all the needed <see cref="EventBus{T}"/> Register and Unregister methods
+		/// that a given type is interested in.
+		/// </summary>
+		static readonly Dictionary<Type, ClassMap> ClassRegisterMap = new();
 
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Reflection;
+		/// <summary>
+		/// Reference to the <see cref="EventBus{T}.RaiseAsInterface"/> method per <see cref="IEvent"/>.
+		/// </summary>
+		static readonly Dictionary<Type, Action<IEvent>> CachedRaise = new();
 
-    public static class EventBus
-    {
-        private static Dictionary<Type, ClassMap> class_register_map = new Dictionary<Type, ClassMap>();
-        private static Dictionary<Type, Action<IEvent>> cached_raise = new Dictionary<Type, Action<IEvent>>();
+		/// <summary>
+		/// Holds reference to the Register and Unregister methods of a particular <see cref="EventBus{T}"/>.
+		/// </summary>
+		class BusMap
+		{
+			/// <summary>
+			/// Reference to the <see cref="EventBus{T}.Register"/> method.
+			/// </summary>
+			public Action<IEventReceiverBase> RegisterAction;
 
-        private class BusMap
-        {
-            public Action<IEventReceiverBase> register;
-            public Action<IEventReceiverBase> unregister;
-        }
+			/// <summary>
+			/// Reference to the <see cref="EventBus{T}.Unregister"/> method.
+			/// </summary>
+			public Action<IEventReceiverBase> UnregisterAction;
+		}
 
-        private class ClassMap
-        {
-            public BusMap[] buses;
-        }
+		/// <summary>
+		/// Holds all <see cref="BusMap"/> (reference to the <see cref="EventBus{T}"/> Register and Unregister methods)
+		/// that a particular class is interested in.
+		/// </summary>
+		class ClassMap
+		{
+			public BusMap[] Buses;
+		}
 
-        public static void Initialize()
-        {
+		static EventBus()
+		{
+			var busRegisterMap = new Dictionary<Type, BusMap>();
 
-        }
+			Type delegateType = typeof(Action<>);
+			Type delegateGenericRegister = delegateType.MakeGenericType(typeof(IEventReceiverBase));
+			Type delegateGenericRaise = delegateType.MakeGenericType(typeof(IEvent));
 
-        static EventBus()
-        {
-            Dictionary<Type, BusMap> bus_register_map = new Dictionary<Type, BusMap>();
+			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
-            Type delegateType = typeof(Action<>);
-            Type delegategenericregister = delegateType.MakeGenericType(typeof(IEventReceiverBase));
-            Type delegategenericraise = delegateType.MakeGenericType(typeof(IEvent));
+			Type eventHubType = typeof(EventBus<>);
 
-            var types = Assembly.GetExecutingAssembly().GetTypes();
+			const string GENERIC_EVENT_BUS_REGISTER_METHOD_NAME = "Register";
+			const string GENERIC_EVENT_BUS_UNREGISTER_METHOD_NAME = "Unregister";
+			const string GENERIC_EVENT_BUS_RAISE_METHOD_NAME = "RaiseAsInterface";
 
-            foreach (var t in types)
-            {
-                if (t != typeof(IEvent) && typeof(IEvent).IsAssignableFrom(t))
-                {
-                    Type eventhubtype = typeof(EventBus<>);
-                    Type genMyClass = eventhubtype.MakeGenericType(t);
-                    System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(genMyClass.TypeHandle);
+			Debug.Assert(eventHubType.GetMethod(GENERIC_EVENT_BUS_REGISTER_METHOD_NAME) != null,
+				"pEventBus.EventBus<T> needs to have a method: public static void Register(IEventReceiverBase handler)");
+			Debug.Assert(eventHubType.GetMethod(GENERIC_EVENT_BUS_UNREGISTER_METHOD_NAME) != null,
+				"pEventBus.EventBus<T> needs to have a method: public static void Unregister(IEventReceiverBase handler)");
+			Debug.Assert(eventHubType.GetMethod(GENERIC_EVENT_BUS_RAISE_METHOD_NAME) != null,
+				"pEventBus.EventBus<T> needs to have a method: public static void RaiseAsInterface(IEvent e)");
 
-                    BusMap busmap = new BusMap()
-                    {
-                        register = Delegate.CreateDelegate(delegategenericregister, genMyClass.GetMethod("Register")) as Action<IEventReceiverBase>,
-                        unregister = Delegate.CreateDelegate(delegategenericregister, genMyClass.GetMethod("UnRegister")) as Action<IEventReceiverBase>
-                    };
+			for (int a = 0, aLen = assemblies.Length; a < aLen; ++a)
+			{
+				var types = assemblies[a].GetTypes();
+				foreach (var t in types)
+				{
+					// go through all that implement IEvent
+					if (t != typeof(IEvent) && typeof(IEvent).IsAssignableFrom(t))
+					{
+						// create an EventBus<> for this IEvent
+						Type genMyClass = eventHubType.MakeGenericType(t);
+						System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(genMyClass.TypeHandle);
 
-                    bus_register_map.Add(t, busmap);
+						// keep a reference to the Register/Unregister methods of the created EventBus<>
+						var registerMethod = genMyClass.GetMethod(GENERIC_EVENT_BUS_REGISTER_METHOD_NAME);
+						var unregisterMethod = genMyClass.GetMethod(GENERIC_EVENT_BUS_UNREGISTER_METHOD_NAME);
+						var raiseMethod = genMyClass.GetMethod(GENERIC_EVENT_BUS_RAISE_METHOD_NAME);
 
-                    var method = genMyClass.GetMethod("RaiseAsInterface");
-                    cached_raise.Add(t, (Action<IEvent>)Delegate.CreateDelegate(delegategenericraise, method));
-                }
-            }
+						BusMap busMap = new BusMap()
+						{
+							RegisterAction =
+								Delegate.CreateDelegate(delegateGenericRegister, registerMethod) as Action<IEventReceiverBase>,
+							UnregisterAction =
+								Delegate.CreateDelegate(delegateGenericRegister, unregisterMethod) as Action<IEventReceiverBase>
+						};
 
-            foreach (var t in types)
-            {
-                if (typeof(IEventReceiverBase).IsAssignableFrom(t) && !t.IsInterface)
-                {
-                    Type[] interfaces = t.GetInterfaces().Where(x => x != typeof(IEventReceiverBase) && typeof(IEventReceiverBase).IsAssignableFrom(x)).ToArray();
+						busRegisterMap.Add(t, busMap);
 
-                    ClassMap map = new ClassMap()
-                    {
-                        buses = new BusMap[interfaces.Length]
-                    };
+						CachedRaise.Add(t, (Action<IEvent>) Delegate.CreateDelegate(delegateGenericRaise, raiseMethod));
+					}
+				}
+			}
 
-                    for (int i = 0; i < interfaces.Length; i++)
-                    {
-                        var arg = interfaces[i].GetGenericArguments()[0];
-                        map.buses[i] = bus_register_map[arg];
-                    }
+			for (int a = 0, aLen = assemblies.Length; a < aLen; ++a)
+			{
+				var types = assemblies[a].GetTypes();
+				foreach (var t in types)
+				{
+					// go through all that implement IEventReceiverBase
+					if (typeof(IEventReceiverBase).IsAssignableFrom(t) && !t.IsInterface)
+					{
+						// get all the IEventReceiver that this thing implements
+						Type[] interfaces = t.GetInterfaces().Where(x =>
+							x != typeof(IEventReceiverBase) && typeof(IEventReceiverBase).IsAssignableFrom(x)).ToArray();
 
-                    class_register_map.Add(t, map);
-                }
-            }
-        }
+						ClassMap map = new ClassMap()
+						{
+							Buses = new BusMap[interfaces.Length]
+						};
 
-        public static void Register(IEventReceiverBase target)
-        {
-            Type t = target.GetType();
-            ClassMap map = class_register_map[t];
+						for (int i = 0; i < interfaces.Length; i++)
+						{
+							// we get the exact IEvent that was specified in each implemented IEventReceiver using GetGenericArguments
+							var arg = interfaces[i].GetGenericArguments()[0];
 
-            foreach (var busmap in map.buses)
-            {
-                busmap.register(target);
-            }
-        }
+							// we keep a reference to the Register/Unregister methods for the EventBus<> of that specific IEvent
+							map.Buses[i] = busRegisterMap[arg];
+						}
 
-        public static void UnRegister(IEventReceiverBase target)
-        {
-            Type t = target.GetType();
-            ClassMap map = class_register_map[t];
+						ClassRegisterMap.Add(t, map);
+					}
+				}
+			}
+		}
 
-            foreach (var busmap in map.buses)
-            {
-                busmap.unregister(target);
-            }
-        }
+		/// <summary>
+		/// Call this to be subscribed to events that your object declares
+		/// to be interested in from the IEventReceiver interfaces it implements.
+		/// A good time to call this is during initialization.
+		/// </summary>
+		/// <param name="target">The object that wants to be subscribed.</param>
+		public static void Register(IEventReceiverBase target)
+		{
+			Type t = target.GetType();
+			ClassMap map = ClassRegisterMap[t];
 
-        public static void Raise(IEvent ev)
-        {
-            cached_raise[ev.GetType()](ev);
-        }
+			foreach (var busMap in map.Buses)
+			{
+				busMap.RegisterAction(target);
+			}
+		}
 
-    }
+		/// <summary>
+		/// Call this to be unsubscribed to events that your object was formerly subscribed to in <see cref="Register"/>.
+		/// A good time to call this is when the object is about to be destroyed.
+		/// </summary>
+		/// <param name="target">The object that wants to be unsubscribed of events.</param>
+		public static void Unregister(IEventReceiverBase target)
+		{
+			Type t = target.GetType();
+			ClassMap map = ClassRegisterMap[t];
 
+			foreach (var busMap in map.Buses)
+			{
+				busMap.UnregisterAction(target);
+			}
+		}
+
+		/// <summary>
+		/// Raise/publish an event. Use this if you only have a reference to the <see cref="IEvent"/> and don't know the concrete type.
+		/// </summary>
+		/// <param name="ev">The particular event to be raised.</param>
+		public static void Raise(IEvent ev)
+		{
+			CachedRaise[ev.GetType()](ev);
+		}
+	}
 }
