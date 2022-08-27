@@ -1,0 +1,16 @@
+{
+  "name": "com.anomalousunderdog.eventbus",
+  "version": "0.1.0",
+  "displayName": "Anno Event Bus",
+  "description": "Event bus for Unity that emphasizes performance and zero GC allocation (events are structs).\n\nBased on https://github.com/pointcache/BasicEventBus.\n\nUpdated to work across multiple assemblies and reorganized for Unity Package Manager.",
+  "unity": "2021.3",
+  "licensesUrl": "https://unlicense.org/",
+  "keywords": [
+    "Event Bus",
+    "Event"
+  ],
+  "author": {
+    "name": "Anomlous Underdog"
+  },
+  "type": "library"
+}

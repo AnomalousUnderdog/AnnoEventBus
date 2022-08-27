@@ -1,0 +1,17 @@
+{
+    "name": "com.anomalousunderdog.eventbus.Runtime.Tests.Assembly2",
+    "rootNamespace": "",
+    "references": [
+        "GUID:e7e7d7a7bf45c014b8793375e10aa7e6",
+        "GUID:85a44b4e6fab38f4db501c9cb4dd4045"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

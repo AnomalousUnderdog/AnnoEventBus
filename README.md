@@ -5,19 +5,17 @@ Basic event bus for unity
  * Interface based subscription
  * High performance (1mil events risen per frame at 60 fps on my machine)
 
- # Create an event
- 
- Create new struct, assign `IEvent` interface
- 
- ```csharp
- 
+# Create an event
+
+Create new struct, assign `IEvent` interface
+
+```csharp
+
 public struct TestEvent : IEvent
 {
     public string a;
     public float b;
-
 }
-
 
 ```
 
@@ -32,7 +30,7 @@ EventBus.Raise(new TestEvent()
     b = 7,
     a = "Hello"
 });
-                
+
 ```
 
 Fast method (directly invoke raise on the generic bus)
@@ -44,7 +42,7 @@ EventBus<TestEvent>.Raise(new TestEvent()
     b = 7,
     a = "Hello"
 });
-                
+
 ```
 
 # Subscribing
@@ -53,12 +51,10 @@ EventBus<TestEvent>.Raise(new TestEvent()
 
 ```cs
 
-
 public class EventBusTest : MonoBehaviour,
     IEventReceiver<TestEvent>,
     IEventReceiver<OnResourceDrop>
 {
-
 
 ```
 
