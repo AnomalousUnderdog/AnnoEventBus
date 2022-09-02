@@ -1,4 +1,4 @@
-namespace pEventBus
+namespace AnnoEventBus
 {
 	public interface IEventReceiverBase
 	{

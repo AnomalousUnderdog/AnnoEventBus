@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace pEventBus
+namespace AnnoEventBus
 {
 	/// <summary>
 	/// Handler for one particular <see cref="IEvent"/> implementation.

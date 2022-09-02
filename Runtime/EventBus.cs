@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace pEventBus
+namespace AnnoEventBus
 {
 	/// <summary>
 	/// Main entry point for objects to register and unregister from events.

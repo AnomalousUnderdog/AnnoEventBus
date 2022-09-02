@@ -1,4 +1,4 @@
-using pEventBus;
+using AnnoEventBus;
 using UnityEngine;
 
 public struct EventFromAssembly2 : IEvent
