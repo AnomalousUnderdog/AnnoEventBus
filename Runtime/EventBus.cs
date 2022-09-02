@@ -48,6 +48,21 @@ namespace AnnoEventBus
 
 		static EventBus()
 		{
+			Remap();
+		}
+
+		/// <summary>
+		/// Goes through all loaded assemblies and checks for every type of event and event receiver,
+		/// so that we cache the exact Register/Unregister methods needed for a given object.
+		/// </summary>
+		/// <remarks>
+		/// Automatically called, but you may want to call this if you dynamically load new assemblies during runtime.
+		/// </remarks>
+		public static void Remap()
+		{
+			ClassRegisterMap.Clear();
+			CachedRaise.Clear();
+
 			var busRegisterMap = new Dictionary<Type, BusMap>();
 
 			Type delegateType = typeof(Action<>);
