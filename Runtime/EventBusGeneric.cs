@@ -80,7 +80,7 @@ namespace AnnoEventBus
 
 		/// <summary>
 		/// Raise/publish an event.
-		/// Use this if you only have a reference to the  and can't refer to the concrete type.
+		/// Use this if you only have a reference to the <see cref="IEvent"/> and can't refer to the concrete type.
 		/// The <see cref="IEvent"/> passed should be the type that this EventBus is for.
 		/// </summary>
 		/// <param name="e">The particular event to be raised.</param>

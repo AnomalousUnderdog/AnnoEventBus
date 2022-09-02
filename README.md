@@ -3,7 +3,7 @@ Basic event bus for unity
 
  * Structs for events - no garbage
  * Interface based subscription
- * High performance (1mil events risen per frame at 60 fps on my machine)
+ * High performance (1 mil events fired per frame at 60 fps on my machine)
 
 # Create an event
 
