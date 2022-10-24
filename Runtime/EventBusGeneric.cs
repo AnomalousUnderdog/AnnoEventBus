@@ -70,7 +70,7 @@ namespace AnnoEventBus
 		/// Use this if you know the concrete type of the event.
 		/// </summary>
 		/// <param name="e">The particular event to be raised.</param>
-		public static void Raise(T e)
+		public static void Raise(T e = default)
 		{
 			for (int i = 0; i < _count; i++)
 			{
